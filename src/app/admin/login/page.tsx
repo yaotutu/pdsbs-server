@@ -2,60 +2,84 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, Form, Input, Button, message } from "antd";
+import { toast } from "sonner";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const router = useRouter();
 
-  const handleSubmit = async (values: { username: string; password: string }) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username || !password) {
+      toast.error("请输入用户名和密码");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({ username, password }),
       });
       const data = await res.json();
       if (data.code === 0) {
         localStorage.setItem("admin_token", data.data.token);
         document.cookie = `admin_token=${data.data.token}; path=/; max-age=${30 * 24 * 3600}`;
-        message.success("登录成功");
+        toast.success("登录成功");
         router.push("/admin");
       } else {
-        message.error(data.message);
+        toast.error(data.message);
       }
     } catch {
-      message.error("登录失败");
+      toast.error("登录失败");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "#f0f2f5",
-      }}
-    >
-      <Card title="医美案例管理系统" style={{ width: 400 }}>
-        <Form onFinish={handleSubmit} layout="vertical">
-          <Form.Item name="username" label="用户名" rules={[{ required: true, message: "请输入用户名" }]}>
-            <Input placeholder="请输入用户名" />
-          </Form.Item>
-          <Form.Item name="password" label="密码" rules={[{ required: true, message: "请输入密码" }]}>
-            <Input.Password placeholder="请输入密码" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading} block>
-              登录
+    <div className="flex min-h-screen items-center justify-center bg-muted">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+          <CardTitle className="text-xl">医美案例管理系统</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">用户名</Label>
+              <Input
+                id="username"
+                placeholder="请输入用户名"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">密码</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="请输入密码"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "登录中..." : "登录"}
             </Button>
-          </Form.Item>
-        </Form>
+          </form>
+        </CardContent>
       </Card>
     </div>
   );

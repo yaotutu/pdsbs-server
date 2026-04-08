@@ -1,11 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Table, Button, Space, Tag, Popconfirm, message, Input, Select } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
-
-const { Search } = Input;
+import { Plus, Search, Trash2, Pencil } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Article {
   id: number;
@@ -28,20 +52,17 @@ export default function ArticlesPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState("");
-  const [categoryId, setCategoryId] = useState<string | undefined>();
+  const [categoryId, setCategoryId] = useState<string>("all");
   const [loading, setLoading] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const router = useRouter();
 
-  const fetchArticles = async () => {
+  const fetchArticles = useCallback(async () => {
     setLoading(true);
     const token = localStorage.getItem("admin_token");
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: "10",
-      status: "", // 管理端看所有状态
-    });
+    const params = new URLSearchParams({ page: page.toString(), limit: "10" });
     if (keyword) params.set("keyword", keyword);
-    if (categoryId) params.set("category", categoryId);
+    if (categoryId && categoryId !== "all") params.set("category", categoryId);
 
     const res = await fetch(`/api/articles?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -52,106 +73,172 @@ export default function ArticlesPage() {
       setTotal(data.data.total);
     }
     setLoading(false);
-  };
-
-  const fetchCategories = async () => {
-    const token = localStorage.getItem("admin_token");
-    const res = await fetch("/api/categories", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    if (data.code === 0) setCategories(data.data);
-  };
+  }, [page, keyword, categoryId]);
 
   useEffect(() => {
-    fetchCategories();
+    const token = localStorage.getItem("admin_token");
+    fetch("/api/categories", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((r) => r.code === 0 && setCategories(r.data));
   }, []);
 
   useEffect(() => {
     fetchArticles();
-  }, [page]);
+  }, [fetchArticles]);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async () => {
+    if (!deleteId) return;
     const token = localStorage.getItem("admin_token");
-    const res = await fetch(`/api/articles/${id}`, {
+    const res = await fetch(`/api/articles/${deleteId}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
     if (data.code === 0) {
-      message.success("删除成功");
+      toast.success("删除成功");
       fetchArticles();
     } else {
-      message.error(data.message);
+      toast.error(data.message);
     }
+    setDeleteId(null);
   };
 
-  const columns = [
-    { title: "ID", dataIndex: "id", width: 60 },
-    { title: "标题", dataIndex: "title" },
-    { title: "分类", dataIndex: ["category", "name"], width: 100 },
-    { title: "作者", dataIndex: ["author", "nickname"], width: 100 },
-    {
-      title: "状态",
-      dataIndex: "status",
-      width: 80,
-      render: (s: string) =>
-        s === "published" ? <Tag color="green">已发布</Tag> : <Tag>草稿</Tag>,
-    },
-    { title: "阅读量", dataIndex: "viewCount", width: 80 },
-    {
-      title: "创建时间",
-      dataIndex: "createdAt",
-      width: 160,
-      render: (d: string) => new Date(d).toLocaleString("zh-CN"),
-    },
-    {
-      title: "操作",
-      width: 150,
-      render: (_: unknown, record: Article) => (
-        <Space>
-          <Button size="small" onClick={() => router.push(`/admin/articles/edit/${record.id}`)}>
-            编辑
-          </Button>
-          <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
-            <Button size="small" danger>
-              删除
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  const totalPages = Math.ceil(total / 10);
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-        <Space>
-          <Search
-            placeholder="搜索文章"
-            onSearch={(v) => { setKeyword(v); setPage(1); fetchArticles(); }}
-            style={{ width: 200 }}
-          />
-          <Select
-            placeholder="选择分类"
-            allowClear
-            style={{ width: 120 }}
-            onChange={(v) => { setCategoryId(v); setPage(1); fetchArticles(); }}
-            options={categories.map((c) => ({ label: c.name, value: c.id.toString() }))}
-          />
-        </Space>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => router.push("/admin/articles/edit/new")}>
-          新建文章
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="搜索文章"
+              className="w-56 pl-9"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && fetchArticles()}
+            />
+          </div>
+          <Select value={categoryId} onValueChange={(v) => v && setCategoryId(v)}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="选择分类" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部分类</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id.toString()}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button onClick={() => router.push("/admin/articles/edit/new")}>
+          <Plus className="mr-1 h-4 w-4" /> 新建文章
         </Button>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={articles}
-        rowKey="id"
-        loading={loading}
-        pagination={{ current: page, total, pageSize: 10, onChange: setPage }}
-      />
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">ID</TableHead>
+              <TableHead>标题</TableHead>
+              <TableHead className="w-20">分类</TableHead>
+              <TableHead className="w-20">状态</TableHead>
+              <TableHead className="w-20 text-right">阅读量</TableHead>
+              <TableHead className="w-36">创建时间</TableHead>
+              <TableHead className="w-28">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  加载中...
+                </TableCell>
+              </TableRow>
+            ) : articles.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  暂无数据
+                </TableCell>
+              </TableRow>
+            ) : (
+              articles.map((a) => (
+                <TableRow key={a.id}>
+                  <TableCell>{a.id}</TableCell>
+                  <TableCell>{a.title}</TableCell>
+                  <TableCell>{a.category?.name}</TableCell>
+                  <TableCell>
+                    <Badge variant={a.status === "published" ? "default" : "secondary"}>
+                      {a.status === "published" ? "已发布" : "草稿"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">{a.viewCount}</TableCell>
+                  <TableCell>{new Date(a.createdAt).toLocaleString("zh-CN")}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => router.push(`/admin/articles/edit/${a.id}`)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleteId(a.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">共 {total} 条</p>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+            >
+              上一页
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page >= totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              下一页
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
+            <DialogDescription>确定要删除这篇文章吗？此操作不可恢复。</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>取消</Button>
+            <Button variant="destructive" onClick={handleDelete}>删除</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

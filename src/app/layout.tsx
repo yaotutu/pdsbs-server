@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { AntdRegistry } from "@ant-design/nextjs-registry";
-import "@ant-design/v5-patch-for-react-19";
-import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
+import "./globals.css";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "医美案例管理系统",
@@ -20,7 +19,8 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" className={cn("font-sans", geist.variable)}>
       <body>
-        <AntdRegistry>{children}</AntdRegistry>
+        {children}
+        <Toaster />
       </body>
     </html>
   );

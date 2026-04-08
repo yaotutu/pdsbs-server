@@ -2,18 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { Upload, Plus } from "lucide-react";
+import { toast } from "sonner";
 import {
-  Form,
-  Input,
-  Select,
-  Button,
   Card,
-  Space,
-  Upload,
-  message,
-  App,
-} from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Category {
   id: number;
@@ -21,10 +28,13 @@ interface Category {
 }
 
 export default function ArticleEditPage() {
-  const [form] = Form.useForm();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [title, setTitle] = useState("");
+  const [summary, setSummary] = useState("");
   const [content, setContent] = useState("");
   const [coverImage, setCoverImage] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [status, setStatus] = useState("draft");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const params = useParams();
@@ -33,32 +43,30 @@ export default function ArticleEditPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("admin_token");
-    // 加载分类
     fetch("/api/categories", { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((r) => r.code === 0 && setCategories(r.data));
 
-    // 加载文章（编辑模式）
     if (!isNew) {
       fetch(`/api/articles/${id}`, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json())
         .then((r) => {
           if (r.code === 0) {
             const a = r.data;
-            form.setFieldsValue({
-              title: a.title,
-              summary: a.summary,
-              categoryId: a.categoryId,
-              status: a.status,
-            });
-            setContent(a.content);
-            setCoverImage(a.coverImage);
+            setTitle(a.title);
+            setSummary(a.summary || "");
+            setContent(a.content || "");
+            setCoverImage(a.coverImage || "");
+            setCategoryId(a.categoryId?.toString() || "");
+            setStatus(a.status || "draft");
           }
         });
     }
   }, [id, isNew]);
 
-  const handleUpload = async (file: File) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     const token = localStorage.getItem("admin_token");
     const formData = new FormData();
     formData.append("file", file);
@@ -68,108 +76,142 @@ export default function ArticleEditPage() {
       body: formData,
     });
     const data = await res.json();
-    if (data.code === 0) return data.data.url;
-    message.error("上传失败");
-    return "";
+    if (data.code === 0) {
+      setCoverImage(data.data.url);
+    } else {
+      toast.error("上传失败");
+    }
   };
 
-  const handleSubmit = async (values: Record<string, unknown>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title) { toast.error("请输入标题"); return; }
     setLoading(true);
     const token = localStorage.getItem("admin_token");
-    const body = { ...values, content, coverImage };
+    const body = {
+      title,
+      summary,
+      content,
+      coverImage,
+      categoryId: categoryId ? parseInt(categoryId) : null,
+      status,
+    };
 
     try {
       const url = isNew ? "/api/articles" : `/api/articles/${id}`;
       const method = isNew ? "POST" : "PUT";
       const res = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       });
       const data = await res.json();
       if (data.code === 0) {
-        message.success(isNew ? "创建成功" : "保存成功");
+        toast.success(isNew ? "创建成功" : "保存成功");
         router.push("/admin/articles");
       } else {
-        message.error(data.message);
+        toast.error(data.message);
       }
     } catch {
-      message.error("操作失败");
+      toast.error("操作失败");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card title={isNew ? "新建文章" : "编辑文章"}>
-      <Form form={form} layout="vertical" onFinish={handleSubmit} style={{ maxWidth: 800 }}>
-        <Form.Item name="title" label="标题" rules={[{ required: true, message: "请输入标题" }]}>
-          <Input placeholder="请输入文章标题" />
-        </Form.Item>
-
-        <Form.Item name="summary" label="摘要">
-          <Input.TextArea rows={2} placeholder="请输入文章摘要" />
-        </Form.Item>
-
-        <Form.Item label="封面图">
-          {coverImage && (
-            <div style={{ marginBottom: 8 }}>
-              <img src={coverImage} alt="cover" style={{ maxHeight: 120 }} />
-            </div>
-          )}
-          <Upload
-            beforeUpload={async (file) => {
-              const url = await handleUpload(file);
-              if (url) setCoverImage(url);
-              return false;
-            }}
-            showUploadList={false}
-          >
-            <Button icon={<PlusOutlined />}>上传封面</Button>
-          </Upload>
-        </Form.Item>
-
-        <Form.Item label="正文内容">
-          <Input.TextArea
-            rows={12}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="请输入文章正文（支持HTML）"
-          />
-        </Form.Item>
-
-        <Space>
-          <Form.Item name="categoryId" label="分类">
-            <Select
-              style={{ width: 200 }}
-              options={categories.map((c) => ({ label: c.name, value: c.id }))}
-              placeholder="请选择分类"
+    <Card className="max-w-3xl">
+      <CardHeader>
+        <CardTitle>{isNew ? "新建文章" : "编辑文章"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">标题</Label>
+            <Input
+              id="title"
+              placeholder="请输入文章标题"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
             />
-          </Form.Item>
+          </div>
 
-          <Form.Item name="status" label="状态" initialValue="draft">
-            <Select
-              style={{ width: 120 }}
-              options={[
-                { label: "草稿", value: "draft" },
-                { label: "发布", value: "published" },
-              ]}
+          <div className="space-y-2">
+            <Label htmlFor="summary">摘要</Label>
+            <Textarea
+              id="summary"
+              rows={2}
+              placeholder="请输入文章摘要"
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
             />
-          </Form.Item>
-        </Space>
+          </div>
 
-        <Form.Item>
-          <Space>
-            <Button type="primary" htmlType="submit" loading={loading}>
-              保存
+          <div className="space-y-2">
+            <Label>封面图</Label>
+            {coverImage && (
+              <div className="mb-2">
+                <img src={coverImage} alt="cover" className="max-h-32 rounded-md" />
+              </div>
+            )}
+            <Button type="button" variant="outline" onClick={() => document.getElementById("cover-upload")?.click()}>
+              <Upload className="mr-1 h-4 w-4" /> 上传封面
             </Button>
-            <Button onClick={() => router.push("/admin/articles")}>取消</Button>
-          </Space>
-        </Form.Item>
-      </Form>
+            <input id="cover-upload" type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="content">正文内容</Label>
+            <Textarea
+              id="content"
+              rows={12}
+              placeholder="请输入文章正文（支持HTML）"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+            />
+          </div>
+
+          <div className="flex gap-4">
+            <div className="space-y-2">
+              <Label>分类</Label>
+              <Select value={categoryId} onValueChange={(v) => v && setCategoryId(v)}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="请选择分类" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id.toString()}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>状态</Label>
+              <Select value={status} onValueChange={(v) => v && setStatus(v)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">草稿</SelectItem>
+                  <SelectItem value="published">发布</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button type="submit" disabled={loading}>
+              {loading ? "保存中..." : "保存"}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => router.push("/admin/articles")}>
+              取消
+            </Button>
+          </div>
+        </form>
+      </CardContent>
     </Card>
   );
 }

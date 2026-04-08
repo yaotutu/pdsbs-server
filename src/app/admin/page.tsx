@@ -1,15 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Col, Row, Statistic, Table, Typography } from "antd";
 import {
-  FileTextOutlined,
-  UserOutlined,
-  ReadOutlined,
-  RiseOutlined,
-} from "@ant-design/icons";
-
-const { Title } = Typography;
+  FileText,
+  Users,
+  BookOpen,
+  TrendingUp,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Stats {
   totalArticles: number;
@@ -32,61 +43,81 @@ export default function DashboardPage() {
       .then((r) => r.code === 0 && setStats(r.data));
   }, []);
 
-  if (!stats) return <div>加载中...</div>;
+  if (!stats) return <div className="text-muted-foreground">加载中...</div>;
+
+  const statCards = [
+    { title: "已发布文章", value: stats.totalArticles, icon: FileText },
+    { title: "注册用户", value: stats.totalUsers, icon: Users },
+    { title: "总阅读量", value: stats.totalReads, icon: BookOpen },
+    { title: "今日阅读", value: stats.todayReads, icon: TrendingUp },
+  ];
 
   return (
-    <div>
-      <Title level={4}>仪表盘</Title>
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic title="已发布文章" value={stats.totalArticles} prefix={<FileTextOutlined />} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title="注册用户" value={stats.totalUsers} prefix={<UserOutlined />} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title="总阅读量" value={stats.totalReads} prefix={<ReadOutlined />} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title="今日阅读" value={stats.todayReads} prefix={<RiseOutlined />} />
-          </Card>
-        </Col>
-      </Row>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">仪表盘</h1>
 
-      <Row gutter={16}>
-        <Col span={12}>
-          <Card title="近7天阅读趋势">
-            {Object.entries(stats.dailyStats).map(([date, count]) => (
-              <div key={date} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                <span>{date}</span>
-                <span>{count} 次</span>
-              </div>
-            ))}
-          </Card>
-        </Col>
-        <Col span={12}>
-          <Card title="热门文章 Top 5">
-            <Table
-              dataSource={stats.topArticles}
-              rowKey="id"
-              pagination={false}
-              size="small"
-              columns={[
-                { title: "排名", render: (_, __, i) => i + 1, width: 60 },
-                { title: "标题", dataIndex: "title" },
-                { title: "阅读量", dataIndex: "viewCount", width: 100 },
-              ]}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <div className="grid grid-cols-4 gap-4">
+        {statCards.map((s) => {
+          const Icon = s.icon;
+          return (
+            <Card key={s.title}>
+              <CardContent className="flex items-center gap-4 pt-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <Icon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{s.title}</p>
+                  <p className="text-2xl font-bold">{s.value}</p>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">近7天阅读趋势</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {Object.entries(stats.dailyStats).map(([date, count]) => (
+                <div key={date} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{date}</span>
+                  <span className="font-medium">{count} 次</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">热门文章 Top 5</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">排名</TableHead>
+                  <TableHead>标题</TableHead>
+                  <TableHead className="w-20 text-right">阅读量</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stats.topArticles.map((a, i) => (
+                  <TableRow key={a.id}>
+                    <TableCell>{i + 1}</TableCell>
+                    <TableCell>{a.title}</TableCell>
+                    <TableCell className="text-right">{a.viewCount}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
