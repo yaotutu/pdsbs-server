@@ -3,15 +3,38 @@ import prisma from "@/lib/prisma";
 import { success, error } from "@/lib/response";
 import { verifyToken, getTokenFromHeader } from "@/lib/auth";
 
-// 获取文章详情
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// 获取文章详情（需登录，后端自动记录阅读行为）
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // 验证用户登录状态
+  const token = getTokenFromHeader(req.headers);
+  const payload = token ? verifyToken(token) : null;
+  if (!payload) return error("请先登录", -1, 401);
+
   const { id } = await params;
+  const articleId = parseInt(id);
+
   const article = await prisma.article.findUnique({
-    where: { id: parseInt(id) },
+    where: { id: articleId },
     include: { category: true, author: { select: { id: true, nickname: true } }, images: true },
   });
 
   if (!article) return error("文章不存在", -1, 404);
+
+  // 后端自动记录阅读行为：创建阅读日志 + 文章阅读量 +1
+  await Promise.all([
+    prisma.readLog.create({
+      data: {
+        userId: payload.userId,
+        articleId,
+        ip: req.headers.get("x-forwarded-for") || "",
+      },
+    }),
+    prisma.article.update({
+      where: { id: articleId },
+      data: { viewCount: { increment: 1 } },
+    }),
+  ]);
+
   return success(article);
 }
 
