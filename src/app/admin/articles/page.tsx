@@ -53,6 +53,7 @@ export default function ArticlesPage() {
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState("");
   const [categoryId, setCategoryId] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [loading, setLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const router = useRouter();
@@ -63,6 +64,7 @@ export default function ArticlesPage() {
     const params = new URLSearchParams({ page: page.toString(), limit: "10" });
     if (keyword) params.set("keyword", keyword);
     if (categoryId && categoryId !== "all") params.set("category", categoryId);
+    if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
 
     const res = await fetch(`/api/articles?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -73,7 +75,7 @@ export default function ArticlesPage() {
       setTotal(data.data.total);
     }
     setLoading(false);
-  }, [page, keyword, categoryId]);
+  }, [page, keyword, categoryId, statusFilter]);
 
   useEffect(() => {
     const token = localStorage.getItem("admin_token");
@@ -119,19 +121,35 @@ export default function ArticlesPage() {
               onKeyDown={(e) => e.key === "Enter" && fetchArticles()}
             />
           </div>
-          <Select value={categoryId} onValueChange={(v) => v && setCategoryId(v)}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="选择分类" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部分类</SelectItem>
-              {categories.map((c) => (
-                <SelectItem key={c.id} value={c.id.toString()}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground whitespace-nowrap">分类</span>
+            <Select value={categoryId} onValueChange={(v) => v && setCategoryId(v)}>
+              <SelectTrigger className="w-28">
+                <SelectValue placeholder="选择分类" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id.toString()}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground whitespace-nowrap">状态</span>
+            <Select value={statusFilter} onValueChange={(v) => v && setStatusFilter(v)}>
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部</SelectItem>
+                <SelectItem value="published">已发布</SelectItem>
+                <SelectItem value="draft">草稿</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <Button onClick={() => router.push("/admin/articles/edit/new")}>
           <Plus className="mr-1 h-4 w-4" /> 新建文章

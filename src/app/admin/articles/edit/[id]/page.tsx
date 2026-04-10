@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Upload, Plus } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import {
   Card,
@@ -21,6 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+// 动态导入富文本编辑器（仅客户端加载，避免 SSR 时 window 未定义）
+const TinyMCEEditor = dynamic(
+  () => import("@/components/editor/TinyMCEEditor"),
+  { ssr: false, loading: () => <div className="h-[500px] border rounded-md flex items-center justify-center text-muted-foreground">编辑器加载中...</div> }
+);
 
 interface Category {
   id: number;
@@ -120,7 +127,7 @@ export default function ArticleEditPage() {
   };
 
   return (
-    <Card className="max-w-3xl">
+    <Card className="max-w-5xl">
       <CardHeader>
         <CardTitle>{isNew ? "新建文章" : "编辑文章"}</CardTitle>
       </CardHeader>
@@ -161,13 +168,11 @@ export default function ArticleEditPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="content">正文内容</Label>
-            <Textarea
-              id="content"
-              rows={12}
-              placeholder="请输入文章正文（支持HTML）"
+            <Label>正文内容</Label>
+            <TinyMCEEditor
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={setContent}
+              height={500}
             />
           </div>
 

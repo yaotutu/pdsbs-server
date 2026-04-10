@@ -12,10 +12,16 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "10");
   const status = searchParams.get("status");
 
+  // 验证身份：管理后台可以查看所有状态的文章
+  const token = getTokenFromHeader(req.headers);
+  const payload = token ? verifyToken(token) : null;
+  const isAdmin = payload?.role === "admin";
+
   const where: Record<string, unknown> = {};
   if (categoryId) where.categoryId = parseInt(categoryId);
   if (status) where.status = status;
-  else where.status = "published";
+  // 非管理员（小程序端）只返回已发布的文章
+  else if (!isAdmin) where.status = "published";
   if (keyword) where.title = { contains: keyword };
 
   const [articles, total] = await Promise.all([
