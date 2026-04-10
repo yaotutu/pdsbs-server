@@ -9,9 +9,13 @@ interface WxSession {
 }
 
 interface WxPhoneResult {
-  phoneNumber?: string;
   errcode?: number;
   errmsg?: string;
+  phone_info?: {
+    phoneNumber?: string;
+    purePhoneNumber?: string;
+    countryCode?: number;
+  };
 }
 
 // 通过 code 换取 openid 和 session_key
@@ -45,10 +49,10 @@ const getPhoneNumber = async (phoneCode: string): Promise<string> => {
     body: JSON.stringify({ code: phoneCode }),
   });
   const data: WxPhoneResult = await res.json();
-  if (data.errcode || !data.phoneNumber) {
+  if (data.errcode || !data.phone_info?.phoneNumber) {
     throw new Error(`获取手机号失败: ${data.errmsg || "未知错误"}`);
   }
-  return data.phoneNumber;
+  return data.phone_info.phoneNumber;
 };
 
 export { code2Session, getPhoneNumber };

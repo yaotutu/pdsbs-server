@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     prisma.readLog.findMany({
       where,
       include: {
-        user: { select: { id: true, nickname: true, avatarUrl: true } },
+        user: { select: { id: true, nickname: true, avatarUrl: true, phone: true, openid: true } },
         article: { select: { id: true, title: true } },
       },
       orderBy: { readAt: "desc" },

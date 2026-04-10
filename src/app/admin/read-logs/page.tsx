@@ -16,7 +16,7 @@ interface ReadLog {
   readAt: string;
   duration: number | null;
   ip: string;
-  user: { id: number; nickname: string; avatarUrl: string };
+  user: { id: number; nickname: string; avatarUrl: string; phone: string; openid: string };
   article: { id: number; title: string };
 }
 
@@ -55,10 +55,10 @@ export default function ReadLogsPage() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">ID</TableHead>
-              <TableHead className="w-28">用户</TableHead>
+              <TableHead className="w-28">手机号</TableHead>
+              <TableHead className="w-28">昵称</TableHead>
               <TableHead>文章</TableHead>
               <TableHead className="w-40">阅读时间</TableHead>
-              <TableHead className="w-20 text-right">阅读时长</TableHead>
               <TableHead className="w-32">IP</TableHead>
             </TableRow>
           </TableHeader>
@@ -79,10 +79,10 @@ export default function ReadLogsPage() {
               logs.map((log) => (
                 <TableRow key={log.id}>
                   <TableCell>{log.id}</TableCell>
+                  <TableCell>{log.user.phone || "-"}</TableCell>
                   <TableCell>{log.user.nickname || `用户${log.user.id}`}</TableCell>
                   <TableCell>{log.article.title}</TableCell>
                   <TableCell>{new Date(log.readAt).toLocaleString("zh-CN")}</TableCell>
-                  <TableCell className="text-right">{log.duration ? `${log.duration}秒` : "-"}</TableCell>
                   <TableCell>{log.ip}</TableCell>
                 </TableRow>
               ))
