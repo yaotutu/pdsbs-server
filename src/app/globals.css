@@ -127,3 +127,38 @@
     @apply font-sans;
     }
 }
+
+/* TipTap 编辑器样式 */
+.tiptap-content .tiptap {
+  outline: none;
+  min-height: inherit;
+}
+
+.tiptap-content .tiptap p {
+  margin: 0.5em 0;
+}
+
+.tiptap-content .tiptap ul,
+.tiptap-content .tiptap ol {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.tiptap-content .tiptap img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.25rem;
+}
+
+.tiptap-content .tiptap a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.tiptap-content .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  height: 0;
+}

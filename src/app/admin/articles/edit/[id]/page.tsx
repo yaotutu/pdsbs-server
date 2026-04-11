@@ -23,9 +23,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// 动态导入富文本编辑器（仅客户端加载，避免 SSR 时 window 未定义）
-const TinyMCEEditor = dynamic(
-  () => import("@/components/editor/TinyMCEEditor"),
+// 动态导入富文本编辑器（仅客户端加载，避免 SSR 问题）
+const TipTapEditor = dynamic(
+  () => import("@/components/editor/TipTapEditor"),
   { ssr: false, loading: () => <div className="h-[500px] border rounded-md flex items-center justify-center text-muted-foreground">编辑器加载中...</div> }
 );
 
@@ -169,7 +169,7 @@ export default function ArticleEditPage() {
 
           <div className="space-y-2">
             <Label>正文内容</Label>
-            <TinyMCEEditor
+            <TipTapEditor
               value={content}
               onChange={setContent}
               height={500}
