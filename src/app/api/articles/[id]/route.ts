@@ -28,6 +28,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   // 后端自动记录阅读行为：创建阅读日志 + 文章阅读量 +1
+  // 阅读记录是副作用，失败不应阻塞文章详情返回
   await Promise.all([
     prisma.readLog.create({
       data: {
@@ -35,11 +36,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         articleId,
         ip: req.headers.get("x-forwarded-for") || "",
       },
-    }),
+    }).catch(() => {}),
     prisma.article.update({
       where: { id: articleId },
       data: { viewCount: { increment: 1 } },
-    }),
+    }).catch(() => {}),
   ]);
 
   return success(article);
