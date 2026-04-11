@@ -68,6 +68,7 @@ APP_URL=http://你的服务器公网地址:端口
 
 ```bash
 npm install
+npx prisma generate    # 生成 Prisma Client（必须在 build 之前执行）
 npm run build
 npm run db:seed
 ```
@@ -116,6 +117,7 @@ server {
 cd pdsbs-server
 git pull
 npm install
+npx prisma generate
 npm run build
 pm2 restart pdsbs
 ```
