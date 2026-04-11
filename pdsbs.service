@@ -1,0 +1,15 @@
+[Unit]
+Description=pdsbs-server 医美案例管理系统
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/pdsbs-server
+ExecStart=/root/.nvm/versions/node/v24.13.0/bin/node -e "require('dotenv').config();const{execSync}=require('child_process');execSync('/root/.nvm/versions/node/v24.13.0/bin/npx next start -p '+(process.env.PORT||3000),{stdio:'inherit'})"
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=PATH=/root/.nvm/versions/node/v24.13.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+[Install]
+WantedBy=multi-user.target
