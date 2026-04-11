@@ -71,3 +71,15 @@ model ReadLog {
   articleId Int
   article   Article  @relation(fields: [articleId], references: [id])
 }
+
+// 轮播图
+model Banner {
+  id        Int      @id @default(autoincrement())
+  title     String   @default("")          // 轮播图标题
+  imageUrl  String                          // 图片路径（必填）
+  linkUrl   String   @default("")          // 点击跳转链接
+  sortOrder Int      @default(0)           // 排序权重，越小越靠前
+  isActive  Boolean  @default(true)        // 是否启用
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

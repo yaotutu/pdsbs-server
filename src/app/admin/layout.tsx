@@ -6,10 +6,11 @@ import {
   LayoutDashboard,
   FileText,
   AppWindow,
-  BookOpen,
   LogOut,
   Menu,
   X,
+  Image,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -19,6 +20,7 @@ const menuItems = [
   { key: "/admin", icon: LayoutDashboard, label: "仪表盘" },
   { key: "/admin/articles", icon: FileText, label: "文章管理" },
   { key: "/admin/categories", icon: AppWindow, label: "分类管理" },
+  { key: "/admin/banners", icon: Image, label: "轮播图管理" },
   { key: "/admin/read-logs", icon: BookOpen, label: "阅读记录" },
 ];
 
