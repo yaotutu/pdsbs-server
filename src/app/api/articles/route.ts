@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { success, error } from "@/lib/response";
 import { verifyToken, getTokenFromHeader } from "@/lib/auth";
+import { resolveContentUrls, extractFirstImage } from "@/lib/url";
 
 // 获取文章列表
 export async function GET(req: NextRequest) {
@@ -38,7 +39,16 @@ export async function GET(req: NextRequest) {
     prisma.article.count({ where }),
   ]);
 
-  return success({ list: articles, total, page, limit });
+  // 将文章内容中的相对图片路径替换为完整地址（小程序端需要）
+  const resolved = articles.map((a) => ({
+    ...a,
+    content: resolveContentUrls(a.content || "", req),
+    coverImage: a.coverImage && !a.coverImage.startsWith("http")
+      ? `${process.env.APP_URL || req.nextUrl.origin}${a.coverImage}`
+      : a.coverImage,
+  }));
+
+  return success({ list: resolved, total, page, limit });
 }
 
 // 创建文章（管理员）
@@ -53,12 +63,15 @@ export async function POST(req: NextRequest) {
 
     if (!title) return error("标题不能为空");
 
+    // 如果没有上传封面图，自动从正文中提取第一张图片作为封面
+    const finalCoverImage = coverImage || extractFirstImage(content || "");
+
     const article = await prisma.article.create({
       data: {
         title,
         content: content || "",
         summary: summary || "",
-        coverImage: coverImage || "",
+        coverImage: finalCoverImage,
         categoryId: categoryId || 1,
         authorId: payload.userId,
         status: status || "draft",

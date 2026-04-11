@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { success, error } from "@/lib/response";
 import { verifyToken, getTokenFromHeader } from "@/lib/auth";
+import { resolveContentUrls, extractFirstImage } from "@/lib/url";
 
 // 获取文章详情（需登录，后端自动记录阅读行为）
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -19,6 +20,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   });
 
   if (!article) return error("文章不存在", -1, 404);
+
+  // 将文章内容中的相对图片路径替换为完整地址（小程序端需要）
+  article.content = resolveContentUrls(article.content || "", req);
+  if (article.coverImage && !article.coverImage.startsWith("http")) {
+    article.coverImage = `${process.env.APP_URL || req.nextUrl.origin}${article.coverImage}`;
+  }
 
   // 后端自动记录阅读行为：创建阅读日志 + 文章阅读量 +1
   await Promise.all([
@@ -54,13 +61,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       await prisma.articleImage.deleteMany({ where: { articleId: parseInt(id) } });
     }
 
+    // 如果没有上传封面图，自动从正文中提取第一张图片作为封面
+    const finalCoverImage = coverImage !== undefined
+      ? (coverImage || extractFirstImage(content || ""))
+      : undefined;
+
     const article = await prisma.article.update({
       where: { id: parseInt(id) },
       data: {
         ...(title !== undefined && { title }),
         ...(content !== undefined && { content }),
         ...(summary !== undefined && { summary }),
-        ...(coverImage !== undefined && { coverImage }),
+        ...(finalCoverImage !== undefined && { coverImage: finalCoverImage }),
         ...(categoryId !== undefined && { categoryId }),
         ...(status !== undefined && { status }),
         ...(images !== undefined && {

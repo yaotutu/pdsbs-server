@@ -115,11 +115,11 @@ const TinyMCEEditor: React.FC<TinyMCEEditorProps> = ({
 
   return (
     <Editor
+      licenseKey="gpl"
       initialValue={value}
       onInit={handleInit}
       onEditorChange={handleEditorChange}
       init={{
-        licenseKey: "gpl",
         height,
         placeholder,
         menubar: false,
