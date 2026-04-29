@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 
 /**
  * 将 HTML 内容中的相对路径图片 URL 替换为完整地址
- * 小程序端需要绝对路径才能正确加载图片
+ * OSS URL 已经是完整地址，只需处理残留的相对路径
  */
 export const resolveContentUrls = (html: string, req: NextRequest): string => {
   const baseUrl = process.env.APP_URL || req.nextUrl.origin;
@@ -20,6 +20,7 @@ export const extractFirstImage = (html: string): string => {
 
 /**
  * 将单个相对路径转为完整地址
+ * OSS URL 已经是完整地址，直接返回
  */
 export const resolveUrl = (url: string, req: NextRequest): string => {
   if (url.startsWith("http")) return url;

@@ -69,7 +69,7 @@ model ReadLog {
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   articleId Int
-  article   Article  @relation(fields: [articleId], references: [id])
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
 }
 
 // 轮播图

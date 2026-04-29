@@ -78,6 +78,7 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
   onChangeRef.current = onChange;
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit,
       UnderlineMark,
