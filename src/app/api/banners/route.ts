@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
   const result = banners.map((b) => ({
     ...b,
-    imageUrl: `${baseUrl}${b.imageUrl}`,
+    imageUrl: b.imageUrl.startsWith("http") ? b.imageUrl : `${baseUrl}${b.imageUrl}`,
   }));
 
   return success(result);
