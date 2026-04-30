@@ -50,7 +50,7 @@ export default function ArticleEditPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("admin_token");
-    fetch("/api/categories", { headers: { Authorization: `Bearer ${token}` } })
+    fetch("/api/categories?all=true", { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((r) => r.code === 0 && setCategories(r.data));
 
@@ -181,7 +181,9 @@ export default function ArticleEditPage() {
               <Label>分类</Label>
               <Select value={categoryId} onValueChange={(v) => v && setCategoryId(v)}>
                 <SelectTrigger className="w-48">
-                  <SelectValue placeholder="请选择分类" />
+                  <SelectValue placeholder="请选择分类">
+                    {categories.find((c) => c.id.toString() === categoryId)?.name || "请选择分类"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((c) => (
@@ -197,7 +199,9 @@ export default function ArticleEditPage() {
               <Label>状态</Label>
               <Select value={status} onValueChange={(v) => v && setStatus(v)}>
                 <SelectTrigger className="w-32">
-                  <SelectValue />
+                  <SelectValue>
+                    {status === "draft" ? "草稿" : status === "published" ? "发布" : ""}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="draft">草稿</SelectItem>

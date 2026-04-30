@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   if (!payload || payload.role !== "admin") return error("无权限", -1, 403);
 
   const banners = await prisma.banner.findMany({
-    orderBy: { sortOrder: "asc" },
+    orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
   });
   return success(banners);
 }

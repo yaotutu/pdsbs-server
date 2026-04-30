@@ -1,20 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { ArrowDown, ArrowUp, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -37,11 +28,15 @@ export default function CategoriesPage() {
   const [editId, setEditId] = useState<number | null>(null);
   const [formName, setFormName] = useState("");
   const [formSortOrder, setFormSortOrder] = useState(0);
-  const [formActive, setFormActive] = useState(true);
+  const [savingSort, setSavingSort] = useState(false);
+
+  const orderedCategories = [...categories].sort(
+    (a, b) => a.sortOrder - b.sortOrder || a.id - b.id
+  );
 
   const fetchCategories = useCallback(async () => {
     const token = localStorage.getItem("admin_token");
-    const res = await fetch("/api/categories", {
+    const res = await fetch("/api/categories?all=true", {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
@@ -55,8 +50,11 @@ export default function CategoriesPage() {
   const openCreate = () => {
     setEditId(null);
     setFormName("");
-    setFormSortOrder(categories.length + 1);
-    setFormActive(true);
+    setFormSortOrder(
+      orderedCategories.length
+        ? Math.max(...orderedCategories.map((c) => c.sortOrder)) + 10
+        : 10
+    );
     setDialogOpen(true);
   };
 
@@ -64,19 +62,24 @@ export default function CategoriesPage() {
     setEditId(c.id);
     setFormName(c.name);
     setFormSortOrder(c.sortOrder);
-    setFormActive(c.isActive);
     setDialogOpen(true);
   };
 
   const handleSubmit = async () => {
-    if (!formName) { toast.error("请输入分类名称"); return; }
+    if (!formName) {
+      toast.error("请输入分类名称");
+      return;
+    }
     const token = localStorage.getItem("admin_token");
     const url = editId ? `/api/categories/${editId}` : "/api/categories";
     const method = editId ? "PUT" : "POST";
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ name: formName, sortOrder: formSortOrder, isActive: formActive }),
+      body: JSON.stringify({
+        name: formName,
+        ...(!editId && { sortOrder: formSortOrder }),
+      }),
     });
     const data = await res.json();
     if (data.code === 0) {
@@ -86,6 +89,57 @@ export default function CategoriesPage() {
     } else {
       toast.error(data.message);
     }
+  };
+
+  const persistCategoryOrders = async (nextCategories: Category[], message: string) => {
+    const token = localStorage.getItem("admin_token");
+    const updates = nextCategories
+      .map((c, index) => ({ ...c, nextSortOrder: (index + 1) * 10 }))
+      .filter((c) => c.sortOrder !== c.nextSortOrder);
+
+    if (updates.length === 0) return;
+
+    setSavingSort(true);
+    try {
+      const results = await Promise.all(
+        updates.map((c) =>
+          fetch(`/api/categories/${c.id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ sortOrder: c.nextSortOrder }),
+          }).then((res) => res.json())
+        )
+      );
+
+      const failed = results.find((data) => data.code !== 0);
+      if (failed) {
+        toast.error(failed.message || "排序保存失败");
+        return;
+      }
+
+      toast.success(message);
+      fetchCategories();
+    } catch {
+      toast.error("排序保存失败");
+    } finally {
+      setSavingSort(false);
+    }
+  };
+
+  const moveCategory = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= orderedCategories.length || savingSort) return;
+    const nextCategories = [...orderedCategories];
+    const [item] = nextCategories.splice(fromIndex, 1);
+    nextCategories.splice(toIndex, 0, item);
+    persistCategoryOrders(nextCategories, "排序已更新");
+  };
+
+  const normalizeCategoryOrders = () => {
+    if (savingSort) return;
+    persistCategoryOrders(orderedCategories, "排序已整理");
   };
 
   const handleDelete = async (id: number) => {
@@ -104,57 +158,96 @@ export default function CategoriesPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <>
+      {/* 页面头部 */}
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">分类管理</h1>
-        <Button onClick={openCreate}>
-          <Plus className="mr-1 h-4 w-4" /> 新建分类
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={normalizeCategoryOrders} disabled={savingSort || categories.length === 0}>
+            <RotateCcw className="mr-1 h-4 w-4" /> 整理排序
+          </Button>
+          <Button onClick={openCreate}>
+            <Plus className="mr-1 h-4 w-4" /> 新建分类
+          </Button>
+        </div>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">ID</TableHead>
-              <TableHead>名称</TableHead>
-              <TableHead className="w-20">排序</TableHead>
-              <TableHead className="w-20">状态</TableHead>
-              <TableHead className="w-28">操作</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {categories.map((c) => (
-              <TableRow key={c.id}>
-                <TableCell>{c.id}</TableCell>
-                <TableCell>{c.name}</TableCell>
-                <TableCell>{c.sortOrder}</TableCell>
-                <TableCell>
-                  <span className={c.isActive ? "text-green-600" : "text-muted-foreground"}>
-                    {c.isActive ? "启用" : "禁用"}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => openEdit(c)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(c.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      {/* 表格 */}
+      <div className="border rounded-lg overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-muted/50 border-b">
+              <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">ID</th>
+              <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">名称</th>
+              <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">顺序</th>
+              <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {categories.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="py-12 text-center text-muted-foreground">
+                  暂无分类，点击上方按钮创建
+                </td>
+              </tr>
+            ) : (
+              orderedCategories.map((c, index) => (
+                <tr key={c.id} className="border-b last:border-b-0 hover:bg-accent/50 transition-colors">
+                  <td className="px-4 py-2.5">{c.id}</td>
+                  <td className="px-4 py-2.5 font-medium">{c.name}</td>
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          title="上移"
+                          disabled={savingSort || index === 0}
+                          onClick={() => moveCategory(index, index - 1)}
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          title="下移"
+                          disabled={savingSort || index === orderedCategories.length - 1}
+                          onClick={() => moveCategory(index, index + 1)}
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <div className="min-w-20">
+                        <div className="font-medium">第 {index + 1} 位</div>
+                        <div className="text-xs text-muted-foreground">排序值 {c.sortOrder}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-2.5 text-right">
+                    <div className="flex gap-1 justify-end">
+                      <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openEdit(c)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(c.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
+      {/* 新建/编辑弹窗 */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -170,26 +263,15 @@ export default function CategoriesPage() {
                 placeholder="请输入分类名称"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="cat-sort">排序</Label>
-              <Input
-                id="cat-sort"
-                type="number"
-                value={formSortOrder}
-                onChange={(e) => setFormSortOrder(parseInt(e.target.value) || 0)}
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <Switch checked={formActive} onCheckedChange={setFormActive} />
-              <Label>启用</Label>
-            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              取消
+            </Button>
             <Button onClick={handleSubmit}>保存</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

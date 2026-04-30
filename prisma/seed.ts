@@ -15,6 +15,9 @@ async function main() {
   await prisma.banner.deleteMany();
   await prisma.category.deleteMany();
 
+  // 重置自增 ID
+  await prisma.$executeRawUnsafe("DELETE FROM sqlite_sequence");
+
   // 创建默认管理员
   const hashedPassword = await bcrypt.hash("admin123", 10);
   await prisma.user.upsert({
