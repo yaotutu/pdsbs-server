@@ -11,6 +11,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const payload = token ? verifyToken(token) : null;
   if (!payload) return error("请先登录", -1, 401);
 
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: { id: true },
+  });
+  if (!user) return error("登录已失效，请重新登录", -1, 401);
+
   const { id } = await params;
   const articleId = parseInt(id);
 
@@ -32,15 +38,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   await Promise.all([
     prisma.readLog.create({
       data: {
-        userId: payload.userId,
+        userId: user.id,
         articleId,
         ip: req.headers.get("x-forwarded-for") || "",
       },
-    }).catch(() => {}),
+    }).catch((e) => {
+      console.error("[阅读记录写入失败]", e);
+    }),
     prisma.article.update({
       where: { id: articleId },
       data: { viewCount: { increment: 1 } },
-    }).catch(() => {}),
+    }).catch((e) => {
+      console.error("[文章阅读量更新失败]", e);
+    }),
   ]);
 
   return success(article);
