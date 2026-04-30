@@ -161,7 +161,7 @@ function About() {
               className="leading-[1.47]"
               style={{ fontSize: "17px", color: "rgba(0, 0, 0, 0.8)", letterSpacing: "-0.374px" }}
             >
-              平顶山市帮颂商贸有限公司成立于河南省平顶山市，是一家专注于电子产品销售、人工智能硬件、办公设备及通讯设备销售的综合性商贸企业。公司秉承"诚信经营、服务至上"的理念，致力于为客户提供优质的产品与专业的技术服务。
+              平顶山市帮颂商贸有限公司成立于河南省平顶山市，是一家专注于电子产品销售、人工智能硬件、办公设备及通讯设备销售的综合性商贸企业。公司秉承&ldquo;诚信经营、服务至上&rdquo;的理念，致力于为客户提供优质的产品与专业的技术服务。
             </p>
             <p
               className="mt-6 leading-[1.47]"
@@ -286,23 +286,14 @@ function Footer() {
     <footer className="bg-black py-8 px-4" style={{ color: "rgba(255, 255, 255, 0.56)" }}>
       <div className="max-w-[980px] mx-auto text-center" style={{ fontSize: "12px", lineHeight: 1.33, letterSpacing: "-0.12px" }}>
         <p>&copy; 2026 平顶山市帮颂商贸有限公司 版权所有</p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-3 mt-2">
+        <div className="mt-2">
           <a
             href="https://beian.miit.gov.cn"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-[rgba(255,255,255,0.8)] transition-colors"
           >
-            豫ICP备XXXXXXXX号
-          </a>
-          <span className="hidden sm:inline">|</span>
-          <a
-            href="http://www.beian.gov.cn"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-[rgba(255,255,255,0.8)] transition-colors"
-          >
-            豫公网安备 XXXXXXXXXXXXX号
+            豫ICP备2026013295号
           </a>
         </div>
         <a
