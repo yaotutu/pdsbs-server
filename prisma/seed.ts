@@ -8,11 +8,18 @@ const adapter = new PrismaLibSql({ url: `file:${dbPath}` });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  // 清空所有业务数据（按外键依赖顺序）
+  await prisma.readLog.deleteMany();
+  await prisma.articleImage.deleteMany();
+  await prisma.article.deleteMany();
+  await prisma.banner.deleteMany();
+  await prisma.category.deleteMany();
+
   // 创建默认管理员
   const hashedPassword = await bcrypt.hash("admin123", 10);
   await prisma.user.upsert({
     where: { openid: "admin" },
-    update: {},
+    update: { password: hashedPassword },
     create: {
       openid: "admin",
       nickname: "管理员",
@@ -21,29 +28,7 @@ async function main() {
     },
   });
 
-  // 创建默认分类
-  const categories = [
-    { name: "口腔", sortOrder: 1 },
-    { name: "植发", sortOrder: 2 },
-    { name: "鼻部", sortOrder: 3 },
-    { name: "眼部", sortOrder: 4 },
-    { name: "隆胸", sortOrder: 5 },
-    { name: "脂肪", sortOrder: 6 },
-    { name: "面部", sortOrder: 7 },
-    { name: "针剂项目", sortOrder: 8 },
-    { name: "皮肤管理", sortOrder: 9 },
-    { name: "面部轮廓", sortOrder: 10 },
-  ];
-
-  for (const cat of categories) {
-    await prisma.category.upsert({
-      where: { id: cat.sortOrder },
-      update: {},
-      create: cat,
-    });
-  }
-
-  console.log("Seed data inserted successfully");
+  console.log("数据库已重置，仅保留管理员账户");
 }
 
 main()
