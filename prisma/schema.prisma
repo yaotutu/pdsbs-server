@@ -44,9 +44,9 @@ model Article {
   updatedAt   DateTime @updatedAt
 
   categoryId Int        @default(1)
-  category   Category   @relation(fields: [categoryId], references: [id])
+  category   Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   authorId   Int        @default(1)
-  author     User       @relation("ArticleAuthor", fields: [authorId], references: [id])
+  author     User       @relation("ArticleAuthor", fields: [authorId], references: [id], onDelete: Cascade)
   images     ArticleImage[]
   readLogs   ReadLog[]
 }
