@@ -1,21 +1,26 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { success, error } from "@/lib/response";
-import { verifyToken, getTokenFromHeader } from "@/lib/auth";
+import { getTokenFromHeader, isGuestAccessEnabled, verifyToken } from "@/lib/auth";
 import { resolveContentUrls, extractFirstImage } from "@/lib/url";
 
-// 获取文章详情（需登录，后端自动记录阅读行为）
+// 获取文章详情（正常模式需登录，游客访问模式下跳过登录校验）
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  // 验证用户登录状态
-  const token = getTokenFromHeader(req.headers);
-  const payload = token ? verifyToken(token) : null;
-  if (!payload) return error("请先登录", -1, 401);
+  const guestAccessEnabled = isGuestAccessEnabled();
+  let user: { id: number } | null = null;
 
-  const user = await prisma.user.findUnique({
-    where: { id: payload.userId },
-    select: { id: true },
-  });
-  if (!user) return error("登录已失效，请重新登录", -1, 401);
+  if (!guestAccessEnabled) {
+    // 验证用户登录状态
+    const token = getTokenFromHeader(req.headers);
+    const payload = token ? verifyToken(token) : null;
+    if (!payload) return error("请先登录", -1, 401);
+
+    user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { id: true },
+    });
+    if (!user) return error("登录已失效，请重新登录", -1, 401);
+  }
 
   const { id } = await params;
   const articleId = parseInt(id);
@@ -33,25 +38,32 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     article.coverImage = `${process.env.APP_URL || req.nextUrl.origin}${article.coverImage}`;
   }
 
-  // 后端自动记录阅读行为：创建阅读日志 + 文章阅读量 +1
-  // 阅读记录是副作用，失败不应阻塞文章详情返回
-  await Promise.all([
-    prisma.readLog.create({
-      data: {
-        userId: user.id,
-        articleId,
-        ip: req.headers.get("x-forwarded-for") || "",
-      },
-    }).catch((e) => {
-      console.error("[阅读记录写入失败]", e);
-    }),
+  // 后端自动记录阅读行为：真实用户写阅读日志，所有访问都会增加阅读量
+  // 阅读相关副作用失败不应阻塞文章详情返回
+  const readEffects: Promise<unknown>[] = [
     prisma.article.update({
       where: { id: articleId },
       data: { viewCount: { increment: 1 } },
     }).catch((e) => {
       console.error("[文章阅读量更新失败]", e);
     }),
-  ]);
+  ];
+
+  if (user) {
+    readEffects.push(
+      prisma.readLog.create({
+        data: {
+          userId: user.id,
+          articleId,
+          ip: req.headers.get("x-forwarded-for") || "",
+        },
+      }).catch((e) => {
+        console.error("[阅读记录写入失败]", e);
+      })
+    );
+  }
+
+  await Promise.all(readEffects);
 
   return success(article);
 }

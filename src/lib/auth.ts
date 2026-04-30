@@ -2,11 +2,22 @@ import jwt from "jsonwebtoken";
 import { jwtVerify } from "jose";
 
 const JWT_SECRET = process.env.JWT_SECRET || "default-secret";
+export const GUEST_TOKEN = "guest-token";
+
+export const guestUser = {
+  id: 0,
+  nickname: "游客",
+  role: "guest",
+};
 
 export interface JwtPayload {
   userId: number;
   role: string;
   openid?: string;
+}
+
+export function isGuestAccessEnabled(): boolean {
+  return process.env.GUEST_ACCESS_ENABLED === "true";
 }
 
 export function signToken(payload: JwtPayload): string {

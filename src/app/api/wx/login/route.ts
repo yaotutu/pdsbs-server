@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { signToken } from "@/lib/auth";
+import { GUEST_TOKEN, guestUser, isGuestAccessEnabled, signToken } from "@/lib/auth";
 import { success, error } from "@/lib/response";
 import { code2Session, getPhoneNumber } from "@/lib/wx";
 
@@ -13,6 +13,13 @@ import { code2Session, getPhoneNumber } from "@/lib/wx";
  */
 export async function POST(req: NextRequest) {
   try {
+    if (isGuestAccessEnabled()) {
+      return success({
+        token: GUEST_TOKEN,
+        user: guestUser,
+      });
+    }
+
     const body = await req.json();
     const { code, phoneCode, nickname, avatarUrl } = body;
 
