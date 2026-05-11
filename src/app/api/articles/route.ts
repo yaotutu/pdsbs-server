@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
   else if (!isAdmin) where.status = "published";
   if (keyword) where.title = { contains: keyword };
 
+  // TODO: 临时忽略分页，下个版本前端修复分页后恢复 skip/take
   const [articles, total] = await Promise.all([
     prisma.article.findMany({
       where,
@@ -33,8 +34,8 @@ export async function GET(req: NextRequest) {
         author: { select: { id: true, nickname: true } },
       },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit,
+      // skip: (page - 1) * limit,
+      // take: limit,
     }),
     prisma.article.count({ where }),
   ]);
