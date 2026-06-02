@@ -8,11 +8,11 @@
     "start": "node -e \"require('dotenv').config();const{execSync}=require('child_process');execSync('next start -p '+(process.env.PORT||3000),{stdio:'inherit'})\"",
     "lint": "eslint",
     "seed": "npx tsx prisma/seed.ts",
+    "db:migrate": "npx prisma migrate deploy",
     "db:push": "npx prisma db push",
-    "db:seed": "npm run db:push && npm run seed",
-    "db:reset": "npx prisma db push --force-reset && npm run seed",
-    "seed:test-files": "npx tsx scripts/seed-local-files.ts",
-    "migrate:oss": "npx tsx scripts/migrate-to-oss.ts"
+    "db:seed": "npm run db:migrate && npm run seed",
+    "db:reset": "npx prisma migrate reset --force && npm run seed",
+    "seed:test-files": "npx tsx scripts/seed-local-files.ts"
   },
   "dependencies": {
     "@ant-design/pro-components": "^2.8.10",

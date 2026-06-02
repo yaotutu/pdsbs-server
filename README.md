@@ -55,7 +55,7 @@ cp .env.example .env
 编辑 `.env`，填入实际配置：
 
 ```env
-DATABASE_URL=file:./dev.db
+DATABASE_URL=file:./pdsbs.db
 JWT_SECRET=你的JWT密钥
 WX_APPID=你的微信小程序AppID
 WX_SECRET=你的微信小程序Secret
@@ -69,8 +69,9 @@ APP_URL=http://你的服务器公网地址:端口
 ```bash
 npm install
 npx prisma generate    # 生成 Prisma Client（必须在 build 之前执行）
+npm run db:migrate     # 创建或更新数据库结构
 npm run build
-npm run db:seed
+npm run db:seed        # 首次初始化示例数据；会清空业务数据，线上更新不要执行
 ```
 
 ### 5. 启动服务
@@ -113,31 +114,47 @@ server {
 
 ### 7. 更新部署
 
+普通代码更新：
+
 ```bash
 cd pdsbs-server
 git pull
 npm install
 npx prisma generate
+npm run db:migrate
 npm run build
 pm2 restart pdsbs
 ```
 
-如果数据库结构有变更：
+> 线上数据库结构变更统一使用 `npm run db:migrate`。不要在线上使用 `npm run db:push` 或 `npm run db:reset`。
+
+如果是第一次从旧版本 `dev.db` 升级到 `pdsbs.db`，按下面的维护窗口流程执行，不要先跑普通更新里的 `npm run db:migrate`：
 
 ```bash
-npm run db:push
+pm2 stop pdsbs
+mkdir -p backup
+cp dev.db backup/dev-$(date +%Y%m%d-%H%M%S).db
+mv dev.db pdsbs.db
+# 然后把 .env 里的 DATABASE_URL 改为 file:./pdsbs.db
+git pull
+npm install
+npx prisma generate
+npx prisma migrate resolve --applied 20260602000000_baseline
+npm run db:migrate
+npm run build
+pm2 restart pdsbs
 ```
 
 ### 8. 数据备份
 
 以下内容需要定期备份：
 
-- `dev.db` — SQLite 数据库文件
+- `pdsbs.db` — SQLite 数据库文件
 - `public/uploads/` — 用户上传的图片资源
 
 ```bash
 # 备份示例
-cp dev.db backup/dev-$(date +%Y%m%d).db
+cp pdsbs.db backup/pdsbs-$(date +%Y%m%d).db
 tar czf backup/uploads-$(date +%Y%m%d).tar.gz public/uploads/
 ```
 

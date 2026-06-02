@@ -1,10 +1,9 @@
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { getDatabaseUrl } from "../src/lib/database-url";
 import bcrypt from "bcryptjs";
-import path from "path";
 
-const dbPath = path.join(__dirname, "..", "dev.db");
-const adapter = new PrismaLibSql({ url: `file:${dbPath}` });
+const adapter = new PrismaLibSql({ url: getDatabaseUrl() });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
