@@ -34,3 +34,12 @@ export async function GET(req: NextRequest) {
 
   return success({ list: logs, total, page, limit });
 }
+
+export async function DELETE(req: NextRequest) {
+  const token = getTokenFromHeader(req.headers);
+  const payload = token ? verifyToken(token) : null;
+  if (!payload || payload.role !== "admin") return error("无权限", -1, 403);
+
+  const result = await prisma.readLog.deleteMany({});
+  return success({ count: result.count }, "清空成功");
+}
