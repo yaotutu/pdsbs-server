@@ -16,10 +16,6 @@ export interface JwtPayload {
   openid?: string;
 }
 
-export function isGuestAccessEnabled(): boolean {
-  return process.env.GUEST_ACCESS_ENABLED === "true";
-}
-
 export function signToken(payload: JwtPayload): string {
   return jwt.sign(payload, JWT_SECRET);
 }

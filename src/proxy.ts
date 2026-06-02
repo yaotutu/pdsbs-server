@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isGuestAccessEnabled, verifyTokenEdge } from "@/lib/auth";
+import { verifyTokenEdge } from "@/lib/auth";
 
 export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -15,18 +15,9 @@ export default async function proxy(req: NextRequest) {
     }
   }
 
-  // 小程序端获取文章详情需要登录
-  if (pathname.match(/^\/api\/articles\/\d+$/) && !isGuestAccessEnabled()) {
-    const token = req.headers.get("authorization")?.replace("Bearer ", "");
-    const payload = token ? await verifyTokenEdge(token) : null;
-    if (!payload) {
-      return NextResponse.json({ code: 401, message: "未登录", data: null }, { status: 401 });
-    }
-  }
-
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/articles/:path+"],
+  matcher: ["/admin/:path*"],
 };

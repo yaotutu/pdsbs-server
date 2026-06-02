@@ -9,9 +9,6 @@
     "lint": "eslint",
     "seed": "npx tsx prisma/seed.ts",
     "db:migrate": "npx prisma migrate deploy",
-    "db:push": "npx prisma db push",
-    "db:seed": "npm run db:migrate && npm run seed",
-    "db:reset": "npx prisma migrate reset --force && npm run seed",
     "seed:test-files": "npx tsx scripts/seed-local-files.ts"
   },
   "dependencies": {

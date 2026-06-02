@@ -11,6 +11,7 @@ import {
   X,
   Image,
   BookOpen,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -22,6 +23,7 @@ const menuItems = [
   { key: "/admin/categories", icon: AppWindow, label: "分类管理" },
   { key: "/admin/banners", icon: Image, label: "轮播图管理" },
   { key: "/admin/read-logs", icon: BookOpen, label: "阅读记录" },
+  { key: "/admin/settings", icon: Settings, label: "系统设置" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -70,8 +70,8 @@ prisma/
 ## 开发命令
 
 - `npm run dev` — 启动开发服务器
-- `npm run db:seed` — 推送 schema 并填充种子数据
-- `npm run db:reset` — 重置数据库并重新填充
+- `npx prisma generate` — 生成 Prisma Client
+- `npm run db:migrate` — 执行数据库迁移
 - `npm run build` — 构建生产版本
 
 ## 编码规范

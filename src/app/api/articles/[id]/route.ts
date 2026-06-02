@@ -1,19 +1,20 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { success, error } from "@/lib/response";
-import { getTokenFromHeader, isGuestAccessEnabled, verifyToken } from "@/lib/auth";
+import { getTokenFromHeader, verifyToken } from "@/lib/auth";
+import { getGuestAccessEnabled } from "@/lib/settings";
 import { resolveContentUrls, extractFirstImage } from "@/lib/url";
 
 // 获取文章详情（正常模式需登录，游客访问模式下跳过登录校验）
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const guestAccessEnabled = isGuestAccessEnabled();
+  const guestAccessEnabled = await getGuestAccessEnabled();
   let user: { id: number } | null = null;
 
   if (!guestAccessEnabled) {
     // 验证用户登录状态
     const token = getTokenFromHeader(req.headers);
     const payload = token ? verifyToken(token) : null;
-    if (!payload) return error("请先登录", -1, 401);
+    if (!payload) return error("未登录", 401, 401);
 
     user = await prisma.user.findUnique({
       where: { id: payload.userId },

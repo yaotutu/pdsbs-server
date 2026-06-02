@@ -20,8 +20,9 @@
 # 安装依赖
 npm install
 
-# 初始化数据库并填充种子数据（首次运行）
-npm run db:seed
+# 初始化或更新数据库结构
+npx prisma generate
+npm run db:migrate
 
 # 启动开发服务器
 npm run dev
@@ -64,6 +65,8 @@ APP_URL=http://你的服务器公网地址:端口
 
 > `APP_URL` 用于给小程序端返回完整的图片地址，必须配置为服务器的公网可访问地址。
 
+游客访问开关在管理后台“系统设置”页面配置，不再通过环境变量控制。
+
 ### 4. 安装、构建、初始化
 
 ```bash
@@ -71,7 +74,6 @@ npm install
 npx prisma generate    # 生成 Prisma Client（必须在 build 之前执行）
 npm run db:migrate     # 创建或更新数据库结构
 npm run build
-npm run db:seed        # 首次初始化示例数据；会清空业务数据，线上更新不要执行
 ```
 
 ### 5. 启动服务
@@ -126,7 +128,7 @@ npm run build
 pm2 restart pdsbs
 ```
 
-> 线上数据库结构变更统一使用 `npm run db:migrate`。不要在线上使用 `npm run db:push` 或 `npm run db:reset`。
+> 线上数据库结构变更统一使用 `npm run db:migrate`。危险数据库脚本 `db:push`、`db:seed`、`db:reset` 已删除，避免误操作。
 
 如果是第一次从旧版本 `dev.db` 升级到 `pdsbs.db`，按下面的维护窗口流程执行，不要先跑普通更新里的 `npm run db:migrate`：
 

@@ -83,3 +83,11 @@ model Banner {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// 系统设置（单例）
+model AppSetting {
+  id                 Int      @id @default(1)
+  guestAccessEnabled Boolean  @default(false) // 是否允许游客访问文章详情
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
