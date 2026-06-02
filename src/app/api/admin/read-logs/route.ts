@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { success, error } from "@/lib/response";
 import { verifyToken, getTokenFromHeader } from "@/lib/auth";
+import { getInternalPhones } from "@/lib/settings";
 
 export async function GET(req: NextRequest) {
   const token = getTokenFromHeader(req.headers);
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
   if (userId) where.userId = parseInt(userId);
   if (articleId) where.articleId = parseInt(articleId);
 
-  const [logs, total] = await Promise.all([
+  const [logs, total, internalPhones] = await Promise.all([
     prisma.readLog.findMany({
       where,
       include: {
@@ -30,9 +31,16 @@ export async function GET(req: NextRequest) {
       take: limit,
     }),
     prisma.readLog.count({ where }),
+    getInternalPhones(),
   ]);
 
-  return success({ list: logs, total, page, limit });
+  const internalPhoneSet = new Set(internalPhones);
+  const list = logs.map((log) => ({
+    ...log,
+    isInternal: internalPhoneSet.has(log.user.phone),
+  }));
+
+  return success({ list, total, page, limit });
 }
 
 export async function DELETE(req: NextRequest) {

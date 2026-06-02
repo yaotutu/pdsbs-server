@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -26,6 +28,7 @@ interface ReadLog {
   readAt: string;
   duration: number | null;
   ip: string;
+  isInternal: boolean;
   user: { id: number; nickname: string; avatarUrl: string; phone: string; openid: string };
   article: { id: number; title: string };
 }
@@ -189,9 +192,18 @@ export default function ReadLogsPage() {
               </TableRow>
             ) : (
               logs.map((log) => (
-                <TableRow key={log.id}>
+                <TableRow key={log.id} className={cn(log.isInternal && "bg-amber-50/70")}>
                   <TableCell>{log.id}</TableCell>
-                  <TableCell>{log.user.phone || "-"}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span>{log.user.phone || "-"}</span>
+                      {log.isInternal && (
+                        <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+                          内部
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{log.user.nickname || `用户${log.user.id}`}</TableCell>
                   <TableCell>{log.article.title}</TableCell>
                   <TableCell>{new Date(log.readAt).toLocaleString("zh-CN")}</TableCell>

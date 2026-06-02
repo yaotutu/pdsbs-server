@@ -88,6 +88,7 @@ model Banner {
 model AppSetting {
   id                 Int      @id @default(1)
   guestAccessEnabled Boolean  @default(false) // 是否允许游客访问文章详情
+  internalPhones     String   @default("[]")  // 内部员工手机号 JSON 数组
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
